@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta charset="UTF-8">
+  <title>Pterodactyl Install - KrinixCloud</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      background: #0f0f0f;
+      color: #f2f2f2;
+      font-family: monospace;
+      font-size: 20px;
+    }
+    header {
+      padding: 3rem 2rem 1rem;
+      text-align: center;
+    }
+    h1 {
+      font-size: 4rem;
+      margin: 0;
+    }
+    h2 {
+      color: #999;
+      font-weight: normal;
+      font-size: 1.8rem;
+      border-bottom: 1px solid #333;
+      padding-bottom: 6px;
+    }
+    main {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 2rem;
+      line-height: 1.8;
+      font-size: 1.25rem;
+    }
+    ul {
+      padding-left: 1.5rem;
+    }
+    li {
+      margin-bottom: 0.8rem;
+    }
+    a {
+      color: #4df;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    code, pre {
+      background: #1a1a1a;
+      color: #b388ff; /* changed from #7fffd4 (green) to purple */
+      padding: 0.8rem 1rem;
+      display: block;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      overflow-x: auto;
+    }
+    .footer {
+      font-size: 0.9rem;
+      color: #777;
+      margin-top: 3rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <main>
+  <div class="container">
+    <h4>How to install Pterodactyl on KrinixCloud</h4>
+
+    <h2>Step 1/1</h2>
+    <pre>apt update && apt install curl -y</pre>
+
+    <h2>Step 2/1</h2>
+    <pre>bash <(curl https://pterodactyl-installer.se)</pre>
+    <p>
+      - type in your domain/subdomain, <strong>for me it's demo.krinix.xyz</strong><br>
+      - no ufw<br>
+      - HTTPS using Let's Encrypt? type <strong>n</strong><br>
+      - Assume SSL? type <strong>y</strong><br>
+      - agree HTTPS request? type <strong>n</strong>
+    </p>
+    <pre>##############################################################
+* Hostname/FQDN: demo.krinix.xyz
+* Configure Firewall? false
+* Configure Let's Encrypt? false
+* Assume SSL? true
+##############################################################
+    </pre>
+
+    <h2>Step 3/1</h2>
+    <pre>openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /2.pem -out /1.pem -subj "/CN=localhost"
+sed -i 's|^\s*ssl_certificate\s\+.*|    ssl_certificate /1.pem;|' /etc/nginx/sites-available/pterodactyl.conf
+sed -i 's|^\s*ssl_certificate_key\s\+.*|    ssl_certificate_key /2.pem;|' /etc/nginx/sites-available/pterodactyl.conf
+sed -i 's/\b443\b/8443/g; s/\b80\b/8000/g' /etc/nginx/sites-available/pterodactyl.conf
+systemctl restart nginx
+    </pre>
+    <p>no output is OK</p>
+
+    <h2>Step 4/1 - Cloudflare Tunnel</h2>
+    <p>Go to <a href="https://one.dash.cloudflare.com/" target="_blank">one.dash.cloudflare.com</a></p>
+    <ul>
+      <li>Network → Tunnels → Create Tunnel</li>
+      <li>Select cloudflared, name it whatever you want</li>
+      <li>Choose Debian → click under "If you don’t have cloudflared installed on your machine"</li>
+      <li>Paste the copied install command into the VPS shell</li>
+      <li>Then click under "After you have installed cloudflared on your
+ machine, you can install a service to automatically run your tunnel 
+whenever your machine starts"</li>
+      <li>Again, Paste the copied install command into the VPS shell.</li>
+      <li>Now click next, use the <strong>same subdomain</strong> as earlier (for me: demo.krinix.xyz)</li>
+      <li>Service Type: https</li>
+      <li>Service URL: localhost:8443</li>
+      <li>Additional Settings → TLS → enable "No TLS Verify"</li>
+      <li>Click save hostname</li>
+    </ul>
+    <p>Go to <strong>https://demo.krinix.xyz (or whatever your subdomain is)</strong> and check if it works.</p>
+      <p>if it works; Congrats, You've setup the panel properly.</p>
+    <h2>Step 1/2 (Wings)</h2>
+    <ul>
+      <li>Do step 1 again, but select <strong>1</strong> this time</li>
+      <li>Say <strong>y</strong> to "Unsupported type of virtualization"</li>
+      <li><strong>n</strong> to UFW, DB user, Let's Encrypt</li>
+      <li>Refer to step 4, but in Cloudflare: tunnel name → edit → public hostnames → add new</li>
+      <li>Use the node subdomain (for me: <strong>node.krinix.xyz</strong>)</li>
+      <li>Service URL: <strong>localhost:443</strong></li>
+      <li>Additional Settings → TLS → enable "No TLS Verify"</li>
+      <li>it's wings setup time</li>
+    </ul>
+    <h2>Step 2/2 (Still Wings)</h2>
+    <ul>
+      <li>Login to panel</li>
+      <li>Admin → Locations → Create one (for me: US1)</li>
+      <li>Admin → Nodes → Add node (name it whatever)</li>
+      <li>Daemon Port: 443</li>
+      <li>SSL: Not Behind Proxy</li>
+      <li>Use the node subdomain as the FQDN (for me: <strong>node.krinix.xyz</strong>)</li>
+      <li>Copy config token and run the command as usual</li>
+    </ul>
+    <p>If <strong>panel and node are on different hosts</strong>:</p>
+    <pre>openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /2.pem -out /1.pem -subj "/CN=localhost"
+sed -i 's|^\(\s*cert:\s*\).*|\1/1.pem|' /etc/pterodactyl/config.yml
+sed -i 's|^\(\s*key:\s*\).*|\1/2.pem|' /etc/pterodactyl/config.yml
+systemctl restart wings
+    </pre>
+    <p>If <strong>panel and node are on the same host</strong>:</p>
+    <pre>sed -i 's|^\(\s*cert:\s*\).*|\1/1.pem|' /etc/pterodactyl/config.yml
+sed -i 's|^\(\s*key:\s*\).*|\1/2.pem|' /etc/pterodactyl/config.yml
+systemctl restart wings
+    </pre>
+    <p>See if there is a green heart, if yes; Congrats, You've setup wings properly.</p>
+    <h2>Config for Allos</h2>
+    <pre>IP: 0.0.0.0
+Alias: localhost
+Ports: 1025-2024 # or whatever, that's my pick
+    </pre>
+    <p>Cloudflare tunnels wont work for mc, use our shared IPv4.</p><p>
+    </p><h2>Tunneling a MC Server using our shared IPv4</h2>
+    <pre>port add {allo from panel, eg 1025 for me}</pre>
+    <p>Then connect to your server via <code>virtual-net.krinix.xyz:{port from port command}</code></p>
+
+    <h2>How to Use an SRV Record to Hide Your MC Server Port (/w domain) on our shared-ipv4 (Cloudflare)</h2>
+    <p>Want players to connect with mc.krinix.xyz (or wtv is your subdomain & main domain) instead of virtual-net.krinix.xyz:publicport? Here's how using Cloudflare DNS:</p>
+    <h3>Step 1/3: A Record</h3>
+    <ul>
+      <li>Go to <strong>Cloudflare > DNS</strong></li>
+      <li>Add an A record:</li>
+    </ul>
+    <pre>Type: A
+Name: {name, for me it's mc}.{your domain, for me it's krinix.xyz}
+IPv4 address: 146.185.236.18
+Proxy status: DNS only (click orange cloud to turn it gray)
+    </pre>
+    <h3>Step 2/3: SRV Record</h3>
+    <ul>
+      <li>Add an SRV record:</li>
+    </ul>
+    <pre>Type: SRV
+Name: _minecraft._tcp.{name, for me it's mc}
+Priority: 0
+Weight: 0
+Port: 25575 # The public port from `port list`
+Target: {name, for me it's mc}.{your domain, for me it's krinix.xyz}
+    </pre>
+    <p><em>This tells Minecraft that <code>{subdomain, eg mc}.{your domain}</code> > <code>virtual-net.krinix.xyz:25575</code></em></p>
+    <h3>Done!</h3>
+    <p>Now players can just connect to:</p>
+    <pre>mc.krinix.xyz # or {subdomain, eg mc}.{your domain} 
+    </pre>
+    <p><strong>NOTE:</strong> it may take time for the thing to progate to work, just wait for it since that's your dns being slow.</p>
+  </div>
+</main>
+  <div class="footer">
+    <p>Credit: <strong>NighT</strong> - <a href="https://discord.com/users/969258536557244537">Nightt.js</a></p>
+  </div>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" data-cf-beacon='{"version":"2024.11.0","token":"db240f83c7ac4b43b3a0d9e78df7b678"}' crossorigin="anonymous"></script>
+</body>
+</html>
