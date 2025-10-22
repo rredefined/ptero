@@ -18,8 +18,8 @@ BRAND="\n${PURPLE}
 ║ | |_) | | |_| |  __/ |_) | |  | | | | | |_        ║
 ║ |____/|_|\__,_|\___| .__/|_|  |_|_| |_|\__|       ║
 ║                    |_|                            ║
-║      ${YELLOW}>> made by KrinixDev <<${PURPLE}             ║
-║         ${YELLOW}DC: unbelievablegirl.exe${PURPLE}                  ║
+║      ${YELLOW}>> made by NighT <<${PURPLE}             ║
+║         ${YELLOW}DC: nightt.js${PURPLE}                  ║
 ╚═══════════════════════════════════════════════════╝${NC}"
 
 CREDITS="\n${YELLOW}Created by: Shivaksh Chaudhary
